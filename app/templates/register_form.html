@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html><head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Register Form</title>
+    </head>
+
+      <body>
+        <a href="{{ url_for('login') }}">Back to login page</a> <br>
+        <p style="color:Tomato;">{{error if error != None}}</p>
+        <h1>Register</h1>
+         <form action="register_submit" method="post">
+             Username <input type="text" name="username" value="{{uname if uname!=None}}"><br>
+             Password <input type="password" name="password"><br>
+
+        <input type="submit" value="Register">
+        <input type="reset">
+        </form>
+        <br>
+        Username must contain 6 - 100 symbols all of which must be alphanumeric characters. <br>
+        Password must also contain 6 - 100 symbols all of which must be alphanumeric or _*&^%$#@!-+=
+
+    
+</body></html>

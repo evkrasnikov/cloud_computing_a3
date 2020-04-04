@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html><head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Upload Form</title>
+    </head>
+
+      <body>
+ <br>
+        <p style="color:Tomato;">{{error if error != None}}</p>
+        <h1>Upload</h1>
+        <!-- 
+        <form action="{{ url_for('upload_submit') }}" method="post" enctype="multipart/form-data">
+             Photo to upload <input type="file" name="file"><br>
+        
+        <input type="submit" value="Upload">
+        <input type="reset">
+        </form>
+        -->
+
+        <form action="{{presigned.url}}" method="post" enctype="multipart/form-data">
+          
+          <!-- The elements after this will be ignored -->
+          <input type="hidden" name="key" value="{{presigned.fields.key}}" />
+          <input type="hidden" name="AWSAccessKeyId" value="{{presigned.fields.AWSAccessKeyId}}" />
+          <input type="hidden" name="policy" value="{{presigned.fields.policy}}" />
+          <input type="hidden" name="signature" value="{{presigned.fields.signature}}" />
+          <input type="hidden" name="x-amz-security-token" value="{{presigned.fields['x-amz-security-token']}}" />
+          File: <input type="file" name="file" /> 
+          <input type="submit" name="submit" value="Upload to Amazon S3" />
+        </form>
+    
+</body></html>

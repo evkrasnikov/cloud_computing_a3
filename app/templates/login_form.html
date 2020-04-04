@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html><head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <title>Register Form</title>
+    </head>
+
+      <body>
+        <a href="{{ url_for('register') }}">Register here</a> <br>
+        <p style="color:Tomato;">{{error if error != None}}</p>
+        <p style="color:mediumseagreen;">{{message if message != None}}</p>
+        <h1>Login</h1>
+         <form action="login_submit" method="post">
+             Username <input type="text" name="username" value="{{uname if uname!=None}}"><br>
+             Password <input type="password" name="password"><br>
+
+        <input type="submit" value="Login">
+        <input type="reset">
+        </form>
+        
+    
+</body></html>

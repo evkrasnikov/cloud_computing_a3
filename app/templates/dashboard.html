@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <p style="color:Tomato;"> {{error if error != None}} </p><br>
+    <h2>Hello, user <b>{{username}}</b> </h2>
+
+    The following actions are available to you: <br>
+    <a href="{{ url_for('upload') }}">Upload photo</a> <br>
+    <a href="{{ url_for('logout') }}">Logout</a>
+
+    <br><br><br>Thumbnails can be clicked to view the original uploaded image and object detection result <br>
+    <h3>All uploaded photos:</h3>
+
+    <table>
+        <tr>
+            <th>Thumbnail</th>
+            <th>Name</th>
+        </tr>
+        {% for row in stuff %}
+        <tr> 
+            <td>
+                <form action="{{ url_for('view', img_id=row[0]) }}" method="get">
+                    <input type="image" src="{{ row[1] }}" width="100">
+                </form>
+
+            </td>
+            <td>
+                {{ row[2] }}
+            </td>
+        </tr>
+        {% endfor %}
+
+    </table>
+</body>
+</html>
