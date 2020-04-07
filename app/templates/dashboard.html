@@ -8,25 +8,28 @@
     <a href="{{ url_for('upload') }}">Upload photo</a> <br>
     <a href="{{ url_for('logout') }}">Logout</a>
 
-    <br><br><br>Thumbnails can be clicked to view the original uploaded image and object detection result <br>
-    <h3>All uploaded photos:</h3>
+    <br><br><br>The name of the file will turn into a hyperlink, when audio file is done processing <br>
+    <h3>All uploaded files:</h3>
 
     <table>
         <tr>
-            <th>Thumbnail</th>
-            <th>Name</th>
+            <th>File name</th>
+            <th>Source language</th>
+            <th>Destination language</th>
         </tr>
-        {% for row in stuff %}
+        {% for item in items %}
         <tr> 
             <td>
-                <form action="{{ url_for('view', img_id=row[0]) }}" method="get">
-                    <input type="image" src="{{ row[1] }}" width="100">
-                </form>
+                {%if "filename" in item%} 
+                    <a href="{{ url_for('view', filename=item.filename) }}">{{item.filename}}</a> 
+                {%else%}
+                    {{item.filename}}
+                {%endif%}
+                
+            </td>
+            <td>{{item.srclang}}</td>
+            <td>{{item.dstlang}}</td>
 
-            </td>
-            <td>
-                {{ row[2] }}
-            </td>
         </tr>
         {% endfor %}
 

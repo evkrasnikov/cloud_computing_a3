@@ -308,6 +308,19 @@ def dashboard():
     session.pop("error", None)
 
     usr = session.get('username')
+
+    # list all files that are owned by the user
+    key_condition = boto3.dynamodb.conditions.Key('user')
+    table = dynamodb.Table("files")
+    response = table.query(
+        #IndexName="user",
+        KeyConditionExpression=key_condition.eq("qqqqqq")
+    )
+    print(response, file=sys.stderr)
+    items = []
+    if "Items" in response:
+        items = response["Items"]
+    print(url_for("view", filename=items[0]['filename']), file=sys.stderr)
     # cnx = get_db()
     # # Get all images uploaded by the user
     # try:
@@ -318,7 +331,13 @@ def dashboard():
     
     # imgs = [(id, url_for("static", filename="tmb/{}_{}".format(id, name)), name) for id, name in cursor]
     
-    return render_template('dashboard.html', username=usr, stuff=[], error=error)
+    return render_template('dashboard.html', username=usr, items=items, error=error)
+
+
+@webapp.route('/view/<filename>', methods=['GET'])
+@login_required
+def view(filename):
+    return "OK"
 
 @webapp.route('/logout', methods=['GET', 'POST'])
 def logout():
