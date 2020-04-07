@@ -257,17 +257,10 @@ def test_redirect():
     print(src_lang, dst_lang, file_name, file=sys.stderr)
     session["message"] = "File successfully uploaded"
 
+    # also need to make uploaded mp3 file public
+    s3.ObjectAcl(BUCKET_MP3, s3_key).put(ACL='public-read')
+
     return redirect(url_for("dashboard"))
-
-    # '''Displays the upload form'''
-    # usr = session.get('username')
-
-    # object_name = "{}/{}".format(usr, "${filename}")
-    # presigned = create_presigned_post(BUCKET_MP3, object_name)
-    # print(presigned, file=sys.stdout)
-    # error = session.get("error")
-    # session.pop("error", None)
-    # return render_template('upload_form.html', error=error, presigned=presigned)
 
 
 @webapp.route('/upload_submit', methods=['POST'])
@@ -345,8 +338,8 @@ def get_text_from_s3_file(bucket, key):
     return text
 
 def generate_json(text_src, text_dst, text_timings):
-    sentences_src = text_src.split(".")
-    sentences_dst = text_dst.split(".")
+    sentences_src = text_src.split("[1]")
+    sentences_dst = text_dst.split("[1]")
     timings = text_timings.split(",")
     data = []
     

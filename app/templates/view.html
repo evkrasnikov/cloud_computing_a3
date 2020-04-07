@@ -4,11 +4,13 @@
     <a href="{{ url_for('dashboard') }}">Back to all audiofiles</a> <br>
     <body>
         <audio id="audiofile" src="{{mp3_url}}" controls></audio><br>
-        <div id="subtitles"></div>
+        Source language: <div id="subtitles_src"></div> <br>
+        Destination language: <div id="subtitles_dst"></div> <br>
         <script>
         ( function(win, doc) {
             var audioPlayer = doc.getElementById("audiofile");
-            var subtitles = doc.getElementById("subtitles");
+            var subtitles_src = doc.getElementById("subtitles_src");
+            var subtitles_dst = doc.getElementById("subtitles_dst");
             var syncData = {{data | safe}};
 
 
@@ -17,14 +19,23 @@
                     var el;
                     if( audioPlayer.currentTime >= element.start && audioPlayer.currentTime <= element.end )
                     {
-                        while(subtitles.hasChildNodes())
-                            subtitles.removeChild(subtitles.firstChild)
+                        while(subtitles_src.hasChildNodes())
+                            subtitles_src.removeChild(subtitles_src.firstChild)
+
+                        while(subtitles_dst.hasChildNodes())
+                            subtitles_dst.removeChild(subtitles_dst.firstChild)
 
                         el = document.createElement('span');
-                        el.setAttribute("id", "c_" + index);
+                        el.setAttribute("id", "s_" + index);
                         el.innerText = syncData[index].text_src + "\n";
                         el.style.background = 'yellow';
-                        subtitles.appendChild(el);
+                        subtitles_src.appendChild(el);
+
+                        el = document.createElement('span');
+                        el.setAttribute("id", "d_" + index);
+                        el.innerText = syncData[index].text_dst + "\n";
+                        el.style.background = 'green';
+                        subtitles_dst.appendChild(el);
                     }
                 });
             });

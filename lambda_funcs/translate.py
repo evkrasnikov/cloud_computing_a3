@@ -3,6 +3,7 @@ import boto3
 
 dynamodb = boto3.resource('dynamodb')
 s3 = boto3.resource('s3')
+translate = boto3.client('translate')
 transcribe_output_bucket = 'krasniko-a3-transcribe'
 translate_bucket = 'krasniko-a3-translate'
 temp_file_path = '/tmp/hello.txt'
@@ -11,6 +12,7 @@ def extract_timing_info(items):
     '''Input must be the dictionary structure stored in items'''
     timings = ''
     text = ''
+    sentences = []
     sentence_start = True
     sentence_start_time = ''
     sentence_end_time = ''
@@ -22,25 +24,26 @@ def extract_timing_info(items):
             if sentence_start:
                 sentence_start_time = start
                 sentence_start = False
-            text += word
+            text += " " + word
         else:
             punctuation = item["alternatives"][0]["content"]
-            print(type(punctuation))
-            if punctuation == '.':
+            #print(type(punctuation))
+            if punctuation == '.' or punctuation == '?' or punctuation == '!':
                 sentence_end_time = end
                 timings += "{}-{},".format(sentence_start_time, sentence_end_time)
                 sentence_start = True
+                sentences.append(text + punctuation)
+                text = ""
+            else:
+                text += punctuation
             
-            text += punctuation
-            
-    return timings
+    return sentences, timings
         
 
 def upload_text_to_bucket(text, bucket, key):
     with open(temp_file_path, 'w') as f:
         f.write(text)
-    
-    #text_object = "{}.{}".format(filename_noext, src_lang) #'test_en.txt'
+
     #upload the text file to proper bucket
     s3.meta.client.upload_file(temp_file_path, bucket, key)
 
@@ -53,7 +56,7 @@ def lambda_handler(event, context):
     print(file_uri)
     
     #extract the user name and file name from the object name
-    user, filename = object_name.split(",")
+    user, filename = object_name.split("-", 1)
     filename_noext = filename.rsplit(".")[0]
     print(user, filename_noext)
     
@@ -80,35 +83,30 @@ def lambda_handler(event, context):
         items = json_resp['results']['items']
         print("ITEMS", items)
         #also need to extract the timings
-        timings = extract_timing_info(items)
+        sentences, timings = extract_timing_info(items)
         print(timings)
+        print( sentences)
     
-    #with open(temp_file_path, 'w') as f:
-    #    f.write(text)
-    
+
     #text_bucket = "krasniko-ece1779-a3-text"
     src_text_object = "{}/{}.{}".format(user, filename_noext, src_lang) #'test_en.txt'
     timings_object = "{}/{}.time".format(user, filename_noext)
     #upload the text file to proper bucket
     #s3.meta.client.upload_file(temp_file_path, translate_bucket, src_text_object)
-    upload_text_to_bucket(text, translate_bucket, src_text_object)
+    marked_text = " [1] ".join(sentences)
+    upload_text_to_bucket(marked_text, translate_bucket, src_text_object)
     upload_text_to_bucket(timings, translate_bucket, timings_object)
     
-    #text_file_uri = 's3://{}/{}'.format(text_bucket, "text")
-    #output_bucket = 'krasniko-ece1779-a2'
-    #output_file_uri = 's3://{}/{}'.format(output_bucket, 'translate')
-    #print("text file uri", text_file_uri)
-    #print("outpout file uri", output_file_uri)
     
-    client = boto3.client('translate')
-    response = client.translate_text(
-        Text=text,
+    print(marked_text)
+    response = translate.translate_text(
+        Text=marked_text,
         SourceLanguageCode=src_lang, #see here https://docs.aws.amazon.com/translate/latest/dg/what-is.html#what-is-languages
         TargetLanguageCode=dst_lang,
         #ClientToken='string'
     )
     
-    print(response)
+    
     print(response["TranslatedText"])
     
     # get the translated text, save to temp file and then upload to s3
@@ -120,10 +118,20 @@ def lambda_handler(event, context):
     #s3.meta.client.upload_file(temp_file_path, translate_bucket, dst_text_object)
     upload_text_to_bucket(dst_text, translate_bucket, dst_text_object)
     
+    # update add available attribute, for web app to know processing is done
+    table = dynamodb.Table("files")
+    resp = table.update_item(
+        Key={"user": user, 'filename': filename_noext+".mp3"},
+        UpdateExpression = "SET available = :b",
+        ExpressionAttributeValues = {":b": True}
+    )
+    print(resp)
+    
+    #TODO: maybe also delete the transcription job
+    
     #print(event)
     return {
         'statusCode': 200,
         'body': json.dumps('Hello from Lambda!')
     }
-
 
