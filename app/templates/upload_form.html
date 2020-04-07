@@ -17,7 +17,7 @@
         </form>
         -->
 
-        <form action="{{presigned.url}}" method="post" enctype="multipart/form-data">
+        <form action="{{presigned.url}}" method="post" enctype="multipart/form-data" id="form1">
           
           <!-- The elements after this will be ignored -->
           <input type="hidden" name="key" value="{{presigned.fields.key}}" />
@@ -25,8 +25,41 @@
           <input type="hidden" name="policy" value="{{presigned.fields.policy}}" />
           <input type="hidden" name="signature" value="{{presigned.fields.signature}}" />
           <input type="hidden" name="x-amz-security-token" value="{{presigned.fields['x-amz-security-token']}}" />
+          <input type="hidden" name="success_action_redirect" value="{{url_for('test_redirect', _external=True)}}" />
           File: <input type="file" name="file" /> 
-          <input type="submit" name="submit" value="Upload to Amazon S3" />
+          <input type="button" name="button_submit" value="Upload to Amazon S3" onclick="submitForms()"/>
         </form>
+
+        <label for="src_lang">Select a source language:</label>
+        <select id="src_lang" name="Source language">
+          <option value="en">en</option>
+          <option value="fr">fr</option>
+          <option value="it">it</option>
+          <option value="es">es</option>
+        </select> 
+<br>
+        <label for="dst_lang">Select a destination language:</label>
+        <select id="dst_lang" name="Destination language">
+          <option value="en">en</option>
+          <option value="fr">fr</option>
+          <option value="it">it</option>
+          <option value="es">es</option>
+        </select> 
+
+        <script>
+          submitForms = function(){
+              console.log("heladslfk")
+              //want to add source and destination languages as URL parameters
+              src_lang = document.getElementById("src_lang").value
+              dst_lang = document.getElementById("dst_lang").value
+              form = document.getElementById("form1");
+              redirect_url = form.elements[5].value
+              redirect_url += "?src="+src_lang+"&dst=" + dst_lang
+              form.elements[5].value = redirect_url
+              console.log(redirect_url)
+              form.submit()
+              //document.getElementById("form2").submit();
+          }
+        </script>
     
 </body></html>

@@ -11,6 +11,9 @@ import functools
 import boto3
 from botocore.exceptions import ClientError
 
+#files table will hav the following attributes
+# user, filename, srclang, dstlang, timing_file, src_file, dst_file
+# timing_file, src_file, dst_file will be updated only when they become available
 
 def login_required(func):
     '''A decorator for URL endpoints that should be accessed
@@ -45,6 +48,8 @@ GET_USER_IMGS = "SELECT id, name FROM files WHERE users_name = %s"
 GET_IMG_BY_ID = "SELECT users_name, name FROM files WHERE id = %s"
 AWS_BUCKET_URL = "https://krasniko-ece1779-a2.s3.amazonaws.com"
 AWS_BUCKET_NAME = "krasniko-ece1779-a2"
+
+BUCKET_MP3 = 'krasniko-a3-mp3'
 
 LGN_REQ_TXT = "Username must contain 6 - 100 symbols all of which must be alphanumeric characters"
 PSWD_REQ_TXT = "Password must also contain 6 - 100 symbols all of which must be alphanumeric or _*&^%$#@!-+="
@@ -211,11 +216,55 @@ def register_submit():
 @webapp.route('/upload')
 def upload():
     '''Displays the upload form'''
-    presigned = create_presigned_post("krasniko-transcribe", "${filename}")
+    usr = session.get('username')
+    print(url_for("test_redirect", _external=True), file=sys.stderr)
+    object_name = "{}/{}".format(usr, "${filename}")
+    presigned = create_presigned_post(BUCKET_MP3, object_name, {"success_action_redirect": "http://www.google.com/"}, [["starts-with", "$success_action_redirect", ""]])
     print(presigned, file=sys.stdout)
     error = session.get("error")
     session.pop("error", None)
     return render_template('upload_form.html', error=error, presigned=presigned)
+
+
+@webapp.route('/test_redirect')
+def test_redirect():
+    '''need to create a record in the database,
+    lambda will then act on the record and will know which language
+    to translate from and to'''
+
+    src_lang = request.args.get('src')
+    dst_lang = request.args.get('dst')
+    s3_key = request.args.get('key')
+    usr = session.get('username')
+
+    # separate filename and folder name
+    folder_name, file_name = s3_key.split('/')
+    
+    # now populate the table 
+    table = dynamodb.Table("files")
+    resp = table.put_item(
+        Item={
+            'user': usr,
+            'filename': file_name,
+            'srclang': src_lang,
+            'dstlang': dst_lang
+        }
+    )
+    print(resp)
+    print(src_lang, dst_lang, file_name, file=sys.stderr)
+    session["message"] = "File successfully uploaded"
+
+    return redirect(url_for("dashboard"))
+
+    # '''Displays the upload form'''
+    # usr = session.get('username')
+
+    # object_name = "{}/{}".format(usr, "${filename}")
+    # presigned = create_presigned_post(BUCKET_MP3, object_name)
+    # print(presigned, file=sys.stdout)
+    # error = session.get("error")
+    # session.pop("error", None)
+    # return render_template('upload_form.html', error=error, presigned=presigned)
 
 
 @webapp.route('/upload_submit', methods=['POST'])
