@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    
+    <a href="{{ url_for('dashboard') }}">Back to all audiofiles</a> <br>
+    <body>
+        <audio id="audiofile" src="{{mp3_url}}" controls></audio><br>
+        <div id="subtitles"></div>
+        <script>
+        ( function(win, doc) {
+            var audioPlayer = doc.getElementById("audiofile");
+            var subtitles = doc.getElementById("subtitles");
+            var syncData = {{data | safe}};
+
+
+            audioPlayer.addEventListener("timeupdate", function(e){
+                syncData.forEach(function(element, index, array){
+                    var el;
+                    if( audioPlayer.currentTime >= element.start && audioPlayer.currentTime <= element.end )
+                    {
+                        while(subtitles.hasChildNodes())
+                            subtitles.removeChild(subtitles.firstChild)
+
+                        el = document.createElement('span');
+                        el.setAttribute("id", "c_" + index);
+                        el.innerText = syncData[index].text_src + "\n";
+                        el.style.background = 'yellow';
+                        subtitles.appendChild(el);
+                    }
+                });
+            });
+        }(window, document));
+        </script>
+    </body>
+</html>

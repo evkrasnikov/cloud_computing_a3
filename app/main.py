@@ -50,11 +50,14 @@ AWS_BUCKET_URL = "https://krasniko-ece1779-a2.s3.amazonaws.com"
 AWS_BUCKET_NAME = "krasniko-ece1779-a2"
 
 BUCKET_MP3 = 'krasniko-a3-mp3'
+BUCKET_TRANSLATE = 'krasniko-a3-translate'
+BUCKET_MP3_URL = "https://krasniko-a3-mp3.s3.amazonaws.com"
 
 LGN_REQ_TXT = "Username must contain 6 - 100 symbols all of which must be alphanumeric characters"
 PSWD_REQ_TXT = "Password must also contain 6 - 100 symbols all of which must be alphanumeric or _*&^%$#@!-+="
 
 dynamodb = boto3.resource('dynamodb')
+s3 = boto3.resource('s3')
 
 
 def create_presigned_post(bucket_name, object_name,
@@ -334,10 +337,67 @@ def dashboard():
     return render_template('dashboard.html', username=usr, items=items, error=error)
 
 
+def get_text_from_s3_file(bucket, key):
+    tmp_path = "/tmp/temp_a3.txt"
+    s3.meta.client.download_file(bucket, key, tmp_path)
+    with open(tmp_path, "r") as f:
+        text = f.read()
+    return text
+
+def generate_json(text_src, text_dst, text_timings):
+    sentences_src = text_src.split(".")
+    sentences_dst = text_dst.split(".")
+    timings = text_timings.split(",")
+    data = []
+    
+    for src, dst, timing in zip(sentences_src, sentences_dst, timings):
+        if len(timing) == 0 or len(src) == 0 or len(dst) == 0:
+            continue
+        print(dst, file=sys.stderr)
+        start_time, end_time = timing.split("-")
+        elem = {"start": start_time, "end": end_time, "text_src": src, "text_dst": dst}
+        data.append(elem)
+    print(len(sentences_dst), len(sentences_src), len(timings), file=sys.stderr)
+
+    return data
+
 @webapp.route('/view/<filename>', methods=['GET'])
 @login_required
 def view(filename):
-    return "OK"
+    usr = session.get('username')
+    filename_noext = filename.split(".")[0]
+
+    # deteremine which language file need to be downloaded
+    table = dynamodb.Table("files")
+    resp = table.get_item(
+        Key={"user": usr, "filename": filename}
+    )
+    print(resp, file=sys.stderr)
+    if "Item" not in resp:
+        return "something went wrong"
+    else:
+        srclang = resp["Item"]["srclang"]
+        dstlang = resp["Item"]["dstlang"]
+
+    # get the url for mp3 file
+    mp3_url = "{}/{}/{}".format(BUCKET_MP3_URL, usr, filename)
+
+    # download texts for the source, destination languages and timings file
+    src_object_name = "{}/{}.{}".format(usr, filename_noext, srclang)
+    dst_object_name = "{}/{}.{}".format(usr, filename_noext, dstlang)
+    timings_object_name = "{}/{}.time".format(usr, filename_noext)
+    print(src_object_name, timings_object_name, file=sys.stderr)
+
+    src_text = get_text_from_s3_file(BUCKET_TRANSLATE, src_object_name)
+    dst_text = get_text_from_s3_file(BUCKET_TRANSLATE, dst_object_name)
+    timings_text = get_text_from_s3_file(BUCKET_TRANSLATE, timings_object_name)
+    
+    print(src_text, dst_text, timings_text, file=sys.stderr)
+    #testing = [{'asdf':'Бесплатный русский транслит translit.net - конвертер и переводчик'}]#[{"asdfasdf":"dsfxcvg", "dsftd":45, "dsfgsysf":"sdfg"}, {"asdf":345}]
+    data = generate_json(src_text, dst_text, timings_text)
+
+    # create the json thing needed for the javascript
+    return render_template('view.html', data=data, mp3_url=mp3_url)
 
 @webapp.route('/logout', methods=['GET', 'POST'])
 def logout():
