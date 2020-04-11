@@ -1,21 +1,30 @@
 <!DOCTYPE html>
 <html>
 <body>
-    <p style="color:Tomato;"> {{error if error != None}} </p><br>
+    <a href="{{ url_for('logout') }}">Logout</a>
+    <p style="color:Tomato;"> {{error if error != None}} </p>
+    <p style="color:mediumseagreen;">{{message if message != None}}</p>
+    <br>
     <h2>Hello, user <b>{{username}}</b> </h2>
 
-    The following actions are available to you: <br>
-    <a href="{{ url_for('upload') }}">Upload photo</a> <br>
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <p>Please upload a file for transcription and translation</p>
+    
+    
+    <form action="{{ url_for('upload') }}" method="get">
+        <input type="submit" value="Upload file for translation">
+    </form>
+    <br><br>
 
-    <br><br><br>The name of the file will turn into a hyperlink, when audio file is done processing <br>
-    <h3>All uploaded files:</h3>
-
-    <table>
+    <p>All uploaded files are shown in the table below</p>
+    <p>Once file is done processing, status will change to available and name of the file will turn into a hyperlink</p>
+    <p style="text-decoration: underline;""> Please allow between 1-5 minutes for the file to process</p>
+    <br>
+    <table id="audio_files">
         <tr>
             <th>File name</th>
             <th>Source language</th>
             <th>Destination language</th>
+            <th>Status</th>
         </tr>
         {% for item in items %}
         <tr> 
@@ -29,10 +38,28 @@
             </td>
             <td>{{item.srclang}}</td>
             <td>{{item.dstlang}}</td>
+            <td>
+                {%if "available" in item%} 
+                    Available
+                {%else%}
+                    In progress
+                {%endif%}
+            </td>
 
         </tr>
         {% endfor %}
 
     </table>
+
+    <style>
+        table#audio_files{
+          border: 1px solid black;
+          border-collapse: collapse;
+        }
+        th, td {
+          padding: 5px;
+          text-align: center;
+        }
+    </style>
 </body>
 </html>

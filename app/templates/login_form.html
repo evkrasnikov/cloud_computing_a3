@@ -1,21 +1,29 @@
 <!DOCTYPE html>
 <html><head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Register Form</title>
+        <title>Login Form</title>
     </head>
 
       <body>
-        <a href="{{ url_for('register') }}">Register here</a> <br>
+
         <p style="color:Tomato;">{{error if error != None}}</p>
         <p style="color:mediumseagreen;">{{message if message != None}}</p>
         <h1>Login</h1>
          <form action="login_submit" method="post">
-             Username <input type="text" name="username" value="{{uname if uname!=None}}"><br>
-             Password <input type="password" name="password"><br>
+          <table>
+          <tr>
+             <td>Username</td> <td><input type="text" name="username" value="{{uname if uname!=None}}"></td>
+             </tr>
+             <tr>
+             <td>Password</td> <td><input type="password" name="password"></td>
+            </tr>
+            </table> 
 
         <input type="submit" value="Login">
         <input type="reset">
         </form>
+        <br>
+        If you do not have an account <a href="{{ url_for('register') }}">click here to register</a> 
         
     
 </body></html>

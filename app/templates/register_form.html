@@ -9,9 +9,14 @@
         <p style="color:Tomato;">{{error if error != None}}</p>
         <h1>Register</h1>
          <form action="register_submit" method="post">
-             Username <input type="text" name="username" value="{{uname if uname!=None}}"><br>
-             Password <input type="password" name="password"><br>
-
+           <table>
+             <tr>
+             <td>Username</td> <td><input type="text" name="username" value="{{uname if uname!=None}}"></td>
+             </tr>
+             <tr>
+             <td>Password</td> <td><input type="password" name="password"></td>
+             </tr>
+</table>
         <input type="submit" value="Register">
         <input type="reset">
         </form>

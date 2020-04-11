@@ -5,17 +5,10 @@
     </head>
 
       <body>
+        <a href="{{ url_for('dashboard') }}">Back</a>
  <br>
-        <p style="color:Tomato;">{{error if error != None}}</p>
-        <h1>Upload</h1>
-        <!-- 
-        <form action="{{ url_for('upload_submit') }}" method="post" enctype="multipart/form-data">
-             Photo to upload <input type="file" name="file"><br>
-        
-        <input type="submit" value="Upload">
-        <input type="reset">
-        </form>
-        -->
+        <p style="color:Tomato;" id="err_msg"></p>
+        <h1>Upload form</h1>
 
         <form action="{{presigned.url}}" method="post" enctype="multipart/form-data" id="form1">
           
@@ -29,35 +22,77 @@
           File: <input type="file" name="file" /> 
           <input type="button" name="button_submit" value="Upload to Amazon S3" onclick="submitForms()"/>
         </form>
-
-        <label for="src_lang">Select a source language:</label>
-        <select id="src_lang" name="Source language">
-          <option value="en">en</option>
-          <option value="fr">fr</option>
-          <option value="it">it</option>
-          <option value="es">es</option>
-        </select> 
-<br>
-        <label for="dst_lang">Select a destination language:</label>
-        <select id="dst_lang" name="Destination language">
-          <option value="en">en</option>
-          <option value="fr">fr</option>
-          <option value="it">it</option>
-          <option value="es">es</option>
-        </select> 
-
+        <table>
+          <tr>
+            <td>
+            <label for="src_lang">Select a source language:</label></td>
+            <td>
+            <select id="src_lang" name="Source language">
+              <option value="en">English</option>
+              <option value="fr">French</option>
+              <option value="it">Italian</option>
+              <option value="es">Spanish</option>
+            </select> </td>
+        </tr>
+        <td>
+          <label for="dst_lang">Select a destination language:</label></td>
+          <td>
+          <select id="dst_lang" name="Destination language">
+            <option value="en">English</option>
+            <option value="fr">French</option>
+            <option value="it">Italian</option>
+            <option value="es">Spanish</option>
+          </select> 
+          </td>
+        </table>
+      
+      <style>
+          table#upload_form{
+          border: 10px solid black;
+          border-collapse: collapse;
+        }
+      </style>
+        
         <script>
           submitForms = function(){
-              console.log("heladslfk")
-              //want to add source and destination languages as URL parameters
-              src_lang = document.getElementById("src_lang").value
-              dst_lang = document.getElementById("dst_lang").value
+              var err = false;
+              console.log("heladslfk");
+              
+              src_lang = document.getElementById("src_lang").value;
+              dst_lang = document.getElementById("dst_lang").value;
+              if (src_lang == dst_lang)
+              {
+                err = true;
+                console.log("languages are the same");
+                document.getElementById("err_msg").innerText = "Cannot have source and destination language be the same";
+                
+              }
+              console.log(err);
               form = document.getElementById("form1");
-              redirect_url = form.elements[5].value
-              redirect_url += "?src="+src_lang+"&dst=" + dst_lang
-              form.elements[5].value = redirect_url
-              console.log(redirect_url)
-              form.submit()
+              if (err == false)
+              {
+                filename = form.elements["file"].value;
+                if (filename == "")
+                {
+                  err = true;
+                  document.getElementById("err_msg").innerText = "No file selected"; 
+                }
+                else if (!filename.endsWith(".mp3"))
+                {
+                  err = true;
+                  document.getElementById("err_msg").innerText = "Must select and mp3 file, no other formats are supported"; 
+                }
+                else
+                {
+                  //want to add source and destination languages as URL parameters
+                  redirect_url = form.elements["success_action_redirect"].value;
+                  redirect_url += "?src="+src_lang+"&dst=" + dst_lang;
+                  form.elements[5].value = redirect_url;
+                  console.log(redirect_url);
+                  document.getElementById("err_msg").innerText = "Good to go";
+                  form.submit()
+                }
+              }
               //document.getElementById("form2").submit();
           }
         </script>

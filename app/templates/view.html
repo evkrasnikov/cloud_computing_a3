@@ -3,9 +3,10 @@
     
     <a href="{{ url_for('dashboard') }}">Back to all audiofiles</a> <br>
     <body>
+        <p>You are listening to <b>{{item.filename}}</b></p>
         <audio id="audiofile" src="{{mp3_url}}" controls></audio><br>
-        Source language: <div id="subtitles_src"></div> <br>
-        Destination language: <div id="subtitles_dst"></div> <br>
+        <p style="font-size:20px;font-weight:bold;">Source language ({{item.srclang}}):</p> <div id="subtitles_src"></div> <br>
+        <p style="font-size:20px;font-weight:bold;">Destination language ({{item.dstlang}}):</p> <div id="subtitles_dst"></div> <br>
         <script>
         ( function(win, doc) {
             var audioPlayer = doc.getElementById("audiofile");
@@ -28,13 +29,16 @@
                         el = document.createElement('span');
                         el.setAttribute("id", "s_" + index);
                         el.innerText = syncData[index].text_src + "\n";
-                        el.style.background = 'yellow';
+                        el.style.background = 'lightcyan';
+                        el.style.fontSize = "x-large";
                         subtitles_src.appendChild(el);
+
 
                         el = document.createElement('span');
                         el.setAttribute("id", "d_" + index);
                         el.innerText = syncData[index].text_dst + "\n";
-                        el.style.background = 'green';
+                        el.style.background = 'lavender';
+                        el.style.fontSize = "x-large";
                         subtitles_dst.appendChild(el);
                     }
                 });

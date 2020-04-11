@@ -56,6 +56,13 @@ BUCKET_MP3_URL = "https://krasniko-a3-mp3.s3.amazonaws.com"
 LGN_REQ_TXT = "Username must contain 6 - 100 symbols all of which must be alphanumeric characters"
 PSWD_REQ_TXT = "Password must also contain 6 - 100 symbols all of which must be alphanumeric or _*&^%$#@!-+="
 
+lang_code_mapping = {
+        "en": "English",
+        "es": "Spanish",
+        "it": "Italian",
+        "fr": "French"
+        }
+
 dynamodb = boto3.resource('dynamodb')
 s3 = boto3.resource('s3')
 
@@ -218,20 +225,22 @@ def register_submit():
 
 @webapp.route('/upload')
 def upload():
-    '''Displays the upload form'''
+    '''Displays the upload form and populates the form with presigned URL 
+    for direct POST request to S3'''
     usr = session.get('username')
-    print(url_for("test_redirect", _external=True), file=sys.stderr)
+    #print(url_for("test_redirect", _external=True), file=sys.stderr)
     object_name = "{}/{}".format(usr, "${filename}")
     presigned = create_presigned_post(BUCKET_MP3, object_name, {"success_action_redirect": "http://www.google.com/"}, [["starts-with", "$success_action_redirect", ""]])
-    print(presigned, file=sys.stdout)
-    error = session.get("error")
-    session.pop("error", None)
-    return render_template('upload_form.html', error=error, presigned=presigned)
+    
+    #print(presigned, file=sys.stdout)
+    #error = session.get("error")
+    #session.pop("error", None)
+    return render_template('upload_form.html', presigned=presigned)
 
 
 @webapp.route('/test_redirect')
 def test_redirect():
-    '''need to create a record in the database,
+    '''This function is invoked after S3 redirect. It creates a record in the database,
     lambda will then act on the record and will know which language
     to translate from and to'''
 
@@ -253,8 +262,8 @@ def test_redirect():
             'dstlang': dst_lang
         }
     )
-    print(resp)
-    print(src_lang, dst_lang, file_name, file=sys.stderr)
+    #print(resp)
+    #print(src_lang, dst_lang, file_name, file=sys.stderr)
     session["message"] = "File successfully uploaded"
 
     # also need to make uploaded mp3 file public
@@ -263,45 +272,14 @@ def test_redirect():
     return redirect(url_for("dashboard"))
 
 
-@webapp.route('/upload_submit', methods=['POST'])
-def upload_submit():
-    '''Read and save the file submitted through the upload form.
-    Also creates thumbnail and runs object detection
-    '''
-
-    if 'file' not in request.files:
-        session["error"] = 'Wrong form, no file part'
-        return redirect(url_for("upload"))
-    file = request.files['file']
-    
-    if file.filename == '':
-        session["error"] = 'File not selected'
-        return redirect(url_for('upload'))
-    
-    if file: #and valid_file_ext(file.filename):
-        # Update database and get the id value of the file
-        fname = secure_filename(file.filename)
-        # try:
-        #     img_id = add_file_db(fname, session['username'])
-        # except mysql.connector.Error as error:
-        #     session["error"] = "Problem accessing database, please try again"
-        #     return redirect(url_for('upload'))
-        s3 = boto3.client('s3')
-        s3.upload_fileobj(file, AWS_BUCKET_NAME, fname)
-
-    else:
-        session["error"] = 'Unsupported image format'
-        return redirect(url_for('upload'))
-    
-    return redirect(url_for('upload'))
-
-
 @webapp.route('/dashboard', methods=['GET'])
 @login_required
 def dashboard():
-    '''Displays thumbnails of all photos uploaded by the user'''
+    '''Displays a table of all file uploaded by the user'''
     error = session.get("error")
     session.pop("error", None)
+    message = session.get("message")
+    session.pop("message", None)
 
     usr = session.get('username')
 
@@ -310,27 +288,18 @@ def dashboard():
     table = dynamodb.Table("files")
     response = table.query(
         #IndexName="user",
-        KeyConditionExpression=key_condition.eq("qqqqqq")
+        KeyConditionExpression=key_condition.eq(usr)
     )
     print(response, file=sys.stderr)
     items = []
     if "Items" in response:
         items = response["Items"]
-    print(url_for("view", filename=items[0]['filename']), file=sys.stderr)
-    # cnx = get_db()
-    # # Get all images uploaded by the user
-    # try:
-    #     cursor = cnx.cursor()
-    #     cursor.execute(GET_USER_IMGS, (usr,))
-    # except mysql.connector.Error as error:
-    #     session["error"] = "Problem accessing database, please try again"
     
-    # imgs = [(id, url_for("static", filename="tmb/{}_{}".format(id, name)), name) for id, name in cursor]
-    
-    return render_template('dashboard.html', username=usr, items=items, error=error)
+    return render_template('dashboard.html', username=usr, items=items, error=error, message=message)
 
 
 def get_text_from_s3_file(bucket, key):
+    """Downloads a text file from S3 and returns the content"""
     tmp_path = "/tmp/temp_a3.txt"
     s3.meta.client.download_file(bucket, key, tmp_path)
     with open(tmp_path, "r") as f:
@@ -338,6 +307,7 @@ def get_text_from_s3_file(bucket, key):
     return text
 
 def generate_json(text_src, text_dst, text_timings):
+    """Generate json from two textfiles and a timing file"""
     sentences_src = text_src.split("[1]")
     sentences_dst = text_dst.split("[1]")
     timings = text_timings.split(",")
@@ -354,9 +324,11 @@ def generate_json(text_src, text_dst, text_timings):
 
     return data
 
+
 @webapp.route('/view/<filename>', methods=['GET'])
 @login_required
 def view(filename):
+    """Displays the  """
     usr = session.get('username')
     filename_noext = filename.split(".")[0]
 
@@ -365,12 +337,16 @@ def view(filename):
     resp = table.get_item(
         Key={"user": usr, "filename": filename}
     )
-    print(resp, file=sys.stderr)
+    #print(resp, file=sys.stderr)
     if "Item" not in resp:
         return "something went wrong"
     else:
         srclang = resp["Item"]["srclang"]
         dstlang = resp["Item"]["dstlang"]
+    
+    item = resp["Item"]
+    item["srclang"] = lang_code_mapping[item["srclang"]]
+    item["dstlang"] = lang_code_mapping[item["dstlang"]]
 
     # get the url for mp3 file
     mp3_url = "{}/{}/{}".format(BUCKET_MP3_URL, usr, filename)
@@ -385,12 +361,12 @@ def view(filename):
     dst_text = get_text_from_s3_file(BUCKET_TRANSLATE, dst_object_name)
     timings_text = get_text_from_s3_file(BUCKET_TRANSLATE, timings_object_name)
     
-    print(src_text, dst_text, timings_text, file=sys.stderr)
-    #testing = [{'asdf':'Бесплатный русский транслит translit.net - конвертер и переводчик'}]#[{"asdfasdf":"dsfxcvg", "dsftd":45, "dsfgsysf":"sdfg"}, {"asdf":345}]
+    #print(src_text, dst_text, timings_text, file=sys.stderr)
+    
+    # create json thing needed for javascript
     data = generate_json(src_text, dst_text, timings_text)
-
-    # create the json thing needed for the javascript
-    return render_template('view.html', data=data, mp3_url=mp3_url)
+    
+    return render_template('view.html', data=data, mp3_url=mp3_url, item=item)
 
 @webapp.route('/logout', methods=['GET', 'POST'])
 def logout():
