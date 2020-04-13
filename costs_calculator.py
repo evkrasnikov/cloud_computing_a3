@@ -1,6 +1,4 @@
 
-def lambda_costs_per_month(num_users):
-    pass
 
 def s3_costs_per_month(num_users):
     # all of these costs are per month
@@ -37,11 +35,18 @@ def transcribe_costs_per_month(num_users):
     print("Transcribe cost {} ".format(cost))
 
 def translate_costs_per_month(num_users):
-    cost = 105300*num_users*0.000015
+    cost = 119340*num_users*0.000015
     print("Translate cost {} ".format(cost))
 
+def lambda_gateway_costs_per_month(num_users):
+    lambda_compute_cost = max(0, 7.5*num_users-400000)*0.00001667
+    lambda_requests_cost = max(0, 440.0/1000000 * num_users -1) * 0.2
+    gateway_requests_cost = 440.0 * num_users / 1000000
+    total_cost =  lambda_compute_cost + lambda_requests_cost + gateway_requests_cost
+    print("lambda compute cost {}, request cost {}, gateway cost {}, total {}". format(lambda_compute_cost, lambda_requests_cost, gateway_requests_cost, total_cost))
 
-s3_costs_per_month(100)
+s3_costs_per_month(1000000)
 dynamodb_costs_per_month(1000000)
 transcribe_costs_per_month(1000)
-translate_costs_per_month(10)
+translate_costs_per_month(1000)
+lambda_gateway_costs_per_month(1000000)

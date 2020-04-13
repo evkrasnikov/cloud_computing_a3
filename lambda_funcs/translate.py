@@ -93,7 +93,18 @@ def lambda_handler(event, context):
     timings_object = "{}/{}.time".format(user, filename_noext)
     #upload the text file to proper bucket
     #s3.meta.client.upload_file(temp_file_path, translate_bucket, src_text_object)
-    marked_text = " [1] ".join(sentences)
+    
+    ###### return to this code if things stop working
+    #marked_text = " [1] ".join(sentences)
+    
+    #####[1] [2]
+    marked_text = ""
+    anchor_idx = 0
+    for sent in sentences:
+        marked_text += sent + " [{}] ".format(anchor_idx)
+        anchor_idx += 1
+    
+    
     upload_text_to_bucket(marked_text, translate_bucket, src_text_object)
     upload_text_to_bucket(timings, translate_bucket, timings_object)
     

@@ -324,6 +324,46 @@ def generate_json(text_src, text_dst, text_timings):
 
     return data
 
+def generate_json_updated(text_src, text_dst, text_timings):
+    # split timing file 
+    # text_src.find(anchor)
+    timings = text_timings.split(",")
+    num_sentences = len(timings)
+    last_sentence_src_pos = 0
+    last_sentence_dst_pos = 0
+    sentence_start_time = 0
+    #sentence_end_time = 0
+    new_sentence = True
+    data = []
+    for i in range(num_sentences):
+        if timings[i] == "":
+            continue
+
+        anchor = "[{}]".format(i)
+        anchor_pos_src = text_src.find(anchor)
+        anchor_pos_dst = text_dst.find(anchor)
+        start_time, end_time = timings[i].split("-")
+        #print(text_src.find("[3]"))
+        if anchor_pos_src == -1 or anchor_pos_dst == -1:
+            print("coudnt find anchor ", anchor, anchor_pos_src, anchor_pos_dst)
+            if new_sentence:
+                sentence_start_time = start_time
+                new_sentence = False
+        else:
+            sentence_src = text_src[last_sentence_src_pos: anchor_pos_src]
+            sentence_dst = text_dst[last_sentence_dst_pos: anchor_pos_dst]
+            last_sentence_src_pos = anchor_pos_src
+            last_sentence_dst_pos = anchor_pos_dst
+            if new_sentence:
+                sentence_start_time = start_time
+
+            #sentence_end_time = end_time
+            new_sentence = True
+            elem = {"start": sentence_start_time, "end": end_time, "text_src": sentence_src, "text_dst": sentence_dst}
+            data.append(elem)
+    print(data, file=sys.stderr)
+    return data
+
 
 @webapp.route('/view/<filename>', methods=['GET'])
 @login_required
@@ -364,7 +404,9 @@ def view(filename):
     #print(src_text, dst_text, timings_text, file=sys.stderr)
     
     # create json thing needed for javascript
-    data = generate_json(src_text, dst_text, timings_text)
+    #data = generate_json(src_text, dst_text, timings_text)
+    data = generate_json_updated(src_text, dst_text, timings_text)
+    
     
     return render_template('view.html', data=data, mp3_url=mp3_url, item=item)
 
